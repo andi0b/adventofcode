@@ -64,7 +64,7 @@ namespace AdventOfCode.Day1802
 
         public override object SolvePart1(string[] input)
         {
-            var aggregate = input.Select(x => CountDuplicates(x.ToCharArray()))
+            var aggregate = input.Select(CountDuplicates)
                                  .Aggregate((twoTimes: 0, threeTimes: 0),
                                             (sum, next)
                                                 => (next.twoTimes ? sum.twoTimes + 1 : sum.twoTimes,
@@ -73,15 +73,13 @@ namespace AdventOfCode.Day1802
             return aggregate.twoTimes * aggregate.threeTimes;
         }
 
-        internal static int GetDifferenceCount(string a, string b) => a.ToCharArray()
-                                                                       .Zip(b.ToCharArray(), (charA, charB) => charA != charB)
+        internal static int GetDifferenceCount(string a, string b) => a.Zip(b, (charA, charB) => charA != charB)
                                                                        .Count(x => x);
 
         public override object SolvePart2(string[] input)
         {
             string RemoveDiffChars(string a, string b)
-                => new string(a.ToCharArray()
-                               .Zip(b.ToCharArray(), (x, y) => x == y ? x : (char) 0)
+                => new string(a.Zip(b, (x, y) => x == y ? x : (char) 0)
                                .Where(x => x != 0)
                                .ToArray());
 
@@ -118,7 +116,7 @@ namespace AdventOfCode.Day1802
         [InlineData("ababab", false, true)]  // contains three a and three b, but it only counts once.
         public void Part1_CountDuplicates(string input, bool twoTimes, bool threeTimes)
         {
-            var result = Day1802Solution.CountDuplicates(input.ToCharArray());
+            var result = Day1802Solution.CountDuplicates(input);
             Assert.Equal(twoTimes, result.twoTimes);
             Assert.Equal(threeTimes, result.threeTimes);
         }
