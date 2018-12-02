@@ -46,7 +46,7 @@ namespace AdventOfCode.Day1701
 
         public override string GetPart1Input() => File.ReadAllText("InputFiles\\Day1701.txt");
 
-        public override string SolvePart1(string input)
+        public override object SolvePart1(string input)
         {
             var chars =  input.ToCharArray().Select(x=>int.Parse(x.ToString())).ToArray();
 
@@ -60,7 +60,7 @@ namespace AdventOfCode.Day1701
             return sum.ToString();
         }
 
-        public override string SolvePart2(string input)
+        public override object SolvePart2(string input)
         {
             var chars =  input.ToCharArray().Select(x=>int.Parse(x.ToString())).ToArray();
 

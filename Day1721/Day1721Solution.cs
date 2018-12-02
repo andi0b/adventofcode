@@ -25,19 +25,11 @@ namespace AdventOfCode.Day1721
                                                                            "12"
                                                                        };
 
-        public override (int, string[]) GetPart1Input()
-        {
-            var lines = File.ReadAllLines("InputFiles\\Day1721.txt");
-            return (5, lines);
-        }
+        public override (int, string[]) GetPart1Input() =>(5, ReadInputLines());
 
-        public override (int, string[]) GetPart2Input()
-        {
-            var lines = File.ReadAllLines("InputFiles\\Day1721.txt");
-            return (18, lines);
-        }
+        public override (int, string[]) GetPart2Input() =>(18, ReadInputLines());
 
-        public override string SolvePart1((int, string[]) input)
+        public override object SolvePart1((int, string[]) input)
         {
             var (iterations,rulesText) = input;
             var rules = rulesText.Select(Rule.Parse);
@@ -59,7 +51,7 @@ namespace AdventOfCode.Day1721
             return art.GetSetCount().ToString();
         }
 
-        public override string SolvePart2((int, string[]) input) => SolvePart1(input);
+        public override object SolvePart2((int, string[]) input) => SolvePart1(input);
     }
 
     public class Rule

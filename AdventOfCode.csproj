@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <None Remove="InputFiles\Day1721.txt" />
+    <None Remove="InputFiles\Day1801.txt" />
+    <None Remove="InputFiles\Day1802.txt" />
   </ItemGroup>
 
 </Project>

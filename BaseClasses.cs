@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -31,9 +32,12 @@ namespace AdventOfCode
                 ? (TPart2) (object) GetPart1Input()
                 : default;
 
-        public virtual string SolvePart1(TPart1 input) => null;
+        public virtual object SolvePart1(TPart1 input) => null;
+        public virtual object SolvePart2(TPart2 input) => null;
 
-        public virtual string SolvePart2(TPart2 input) => null;
+        protected string ReadInput() => File.ReadAllText(InputFileName);
+        protected string[] ReadInputLines() => File.ReadAllLines(InputFileName);
+        public string InputFileName => "InputFiles\\" + GetType().Name.Replace("Solution", "") + ".txt";
     }
 
     public abstract class TestBase<TSolution, TPart1, TPart2> where TSolution : SolutionBase<TPart1, TPart2>, new()
@@ -89,7 +93,7 @@ namespace AdventOfCode
         public void Part1Tests(TPart1 input, string expectedOutput)
         {
             Skip.If(expectedOutput == null);
-            var output = _solution.SolvePart1(input);
+            var output = _solution.SolvePart1(input).ToString();
             Skip.If(output == null);
             Assert.Equal(expectedOutput, output);
         }
@@ -99,7 +103,7 @@ namespace AdventOfCode
         public void Part2Tests(TPart2 input, string expectedOutput)
         {
             Skip.If(expectedOutput == null);
-            var output = _solution.SolvePart2(input);
+            var output = _solution.SolvePart2(input).ToString();
             Skip.If(output == null);
             Assert.Equal(expectedOutput, output);
         }
