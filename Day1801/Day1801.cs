@@ -47,8 +47,7 @@ namespace AdventOfCode.Day1801
         public override object SolvePart2(int[] input)
         {
             var result = 0;
-            var pastResults = new HashSet<int>();
-            pastResults.Add(0);
+            var pastResults = new HashSet<int> {0};
             while (true)
                 foreach (var i in input)
                 {

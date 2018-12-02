@@ -53,47 +53,44 @@ namespace AdventOfCode.Day1802
 
         internal static (bool twoTimes, bool threeTimes) CountDuplicates<T>(IEnumerable<T> elements)
         {
-            var duplicates = from e in elements
-                             group e by e
-                             into g
-                             where g.Count() > 1
-                             select g.Count();
+            var duplicates = (
+                from e in elements
+                group e by e
+                into g
+                select g.Count()
+            ).ToArray();
 
             return (duplicates.Any(x => x == 2), duplicates.Any(x => x == 3));
         }
 
         public override object SolvePart1(string[] input)
         {
-            var aggregate = input.Select(CountDuplicates)
-                                 .Aggregate((twoTimes: 0, threeTimes: 0),
-                                            (sum, next)
-                                                => (next.twoTimes ? sum.twoTimes + 1 : sum.twoTimes,
-                                                    next.threeTimes ? sum.threeTimes + 1 : sum.threeTimes));
-
-            return aggregate.twoTimes * aggregate.threeTimes;
+            var duplicates = input.Select(CountDuplicates).ToArray();
+            return duplicates.Count(x => x.twoTimes) * duplicates.Count(x => x.threeTimes);
         }
 
-        internal static int GetDifferenceCount(string a, string b) => a.Zip(b, (charA, charB) => charA != charB)
-                                                                       .Count(x => x);
+        internal static int GetDifferenceCount(string a, string b)
+            => a.Zip(b, ValueTuple.Create)
+                .Count(x => x.Item1 != x.Item2);
 
         public override object SolvePart2(string[] input)
         {
-            string RemoveDiffChars(string a, string b)
-                => new string(a.Zip(b, (x, y) => x == y ? x : (char) 0)
-                               .Where(x => x != 0)
-                               .ToArray());
-
+            string RemoveDiffChars(string a, string b) => string.Concat(
+                a.Zip(b, ValueTuple.Create)
+                 .Where(x => x.Item1 == x.Item2)
+            );
+                    
             foreach (var item in input)
             {
-                var diffCounts = input.Select(i => (i, diffCount: GetDifferenceCount(item, i)));
-                var oneDiffElement = diffCounts.FirstOrDefault(x => x.diffCount == 1);
+                var oneDiffElement = input.FirstOrDefault(i => GetDifferenceCount(item, i) == 1);
+                
+                if (oneDiffElement != default)
+                {
+                    var output = RemoveDiffChars(item, oneDiffElement);
 
-                if (oneDiffElement == default) continue;
-
-                var output = RemoveDiffChars(item, oneDiffElement.i);
-
-                return $"Found one different char between elements '{item}' and '{oneDiffElement.i}'. " +
-                       $"PuzzleOutput: '{output}'";
+                    return $"Found one different char between elements '{item}' and '{oneDiffElement}'. " +
+                           $"PuzzleOutput: '{output}'";
+                }
             }
 
             throw new Exception("No element found");
