@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace AdventOfCode.Day1803
 {
-    public class Day1803Solution : SolutionBase<string[],string[]>
+    public class Day1803Solution : SolutionBase<string[], string[]>
     {
         public override IEnumerable<string[]> GetPart1SampleInputs() => new[]
                                                                         {
@@ -25,48 +25,52 @@ namespace AdventOfCode.Day1803
         public override string[] GetPart1Input() => ReadInputLines();
 
 
-        private readonly Dictionary<(int, int), List<int>> _fabric = new Dictionary<(int, int), List<int>>();
 
         public override object SolvePart1(string[] input)
         {
-            var cutInstructions = input.Select(FabricCutInstruction.Parse);
-            foreach (var instruction in cutInstructions)
-                ApplyCutInstruction(instruction);
+            var (fabric, _) = MarkFabric(input);
 
-            var overlappingSquareInches = _fabric.Values.Count(x => x.Count > 1);
-            
+            var overlappingSquareInches = fabric.Values.Count(x => x.Count > 1);
+
             return overlappingSquareInches;
         }
 
         public override object SolvePart2(string[] input)
         {
-            var cutInstructions = input.Select(FabricCutInstruction.Parse).ToArray();
-            foreach (var instruction in cutInstructions)
-                ApplyCutInstruction(instruction);
+            var (fabric, cutInstructions) = MarkFabric(input);
 
             var single = (
                 from c in cutInstructions
-                where (from fv in _fabric.Values
-                       where fv.Contains(c.Id)
-                       select fv).All(fv => fv.Count == 1)
+                where c.GetAllPoints().All(p => fabric[p].Count == 1)
                 select c
             ).Single();
 
             return single.Id;
         }
 
-        private void ApplyCutInstruction(FabricCutInstruction i)
+        private (Dictionary<(int, int), List<int>>, FabricCutInstruction[]) MarkFabric(string[] input)
         {
-            foreach (var point in i.GetAllPoints())
-            {
-                if (!_fabric.TryGetValue(point, out var existing))
-                {
-                    existing = new List<int>();
-                    _fabric.Add(point,existing);
-                }
+            var fabric = new Dictionary<(int, int), List<int>>();
+            var cutInstructions = input.Select(FabricCutInstruction.Parse).ToArray();
 
-                existing.Add(i.Id);
-            } 
+            void ApplyCutInstruction(FabricCutInstruction i)
+            {
+                foreach (var point in i.GetAllPoints())
+                {
+                    if (!fabric.TryGetValue(point, out var existing))
+                    {
+                        existing = new List<int>();
+                        fabric.Add(point, existing);
+                    }
+
+                    existing.Add(i.Id);
+                }
+            }
+
+            foreach (var instruction in cutInstructions)
+                ApplyCutInstruction(instruction);
+
+            return (fabric, cutInstructions);
         }
     }
 
