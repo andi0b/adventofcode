@@ -6,8 +6,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Transactions;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace AdventOfCode.Day1804
 {
@@ -53,12 +51,12 @@ namespace AdventOfCode.Day1804
                                                       .First()
                                                       .guard;
 
-            var sleepMatrix = timeSheet.SleepTimePerMinute(sleepiestGuard);
+            var sleepMatrix = timeSheet.DaysAsleepPerMinute(sleepiestGuard);
 
-            var sleepiestMinute = sleepMatrix.Aggregate((a, b) => a.asleepCount > b.asleepCount ? a : b);
+            var sleepiestMinute = sleepMatrix.OrderByDescending(x => x.asleepCount)
+                                             .First();
 
             return sleepiestGuard * sleepiestMinute.minute;
-
         }
 
         public override object SolvePart2(string input)
@@ -66,14 +64,15 @@ namespace AdventOfCode.Day1804
             var timeSheet = TimeSheet.CalculateTimesheet(input);
 
             var sleepTimesPerGuardMinute = (
+
                 from guard in timeSheet.AllGuardIds()
-                select (
-                    from st in timeSheet.SleepTimePerMinute(guard)
-                    select (guard, st.minute, st.asleepCount)
-                )
+                select (from st in timeSheet.DaysAsleepPerMinute(guard)
+                        select (guard, st.minute, st.asleepCount))
+
             ).SelectMany(x => x);
 
-            var sleepiestMinute = sleepTimesPerGuardMinute.Aggregate((a, b) => a.asleepCount > b.asleepCount ? a : b);
+            var sleepiestMinute = sleepTimesPerGuardMinute.OrderByDescending(x => x.asleepCount)
+                                                          .First();
 
             return sleepiestMinute.minute * sleepiestMinute.guard;
         }
@@ -88,45 +87,38 @@ namespace AdventOfCode.Day1804
             Entries = entries.ToArray();
         }
 
-        public IEnumerable<int> AllGuardIds()
-            => (from day in Entries select day.Guard)
-               .Distinct()
-               .ToArray();
-
+        public IEnumerable<int> AllGuardIds() => (from day in Entries select day.Guard).Distinct();
 
         public int GuardTotalSleepMinutes(int guard)
-            => (
-                    from day in Entries
-                    where day.Guard == guard
-                    select day.SleepTimes
-                ).SelectMany(x => x)
-                 .Aggregate(
-                     0,
-                     (totalSleepTime, next) => totalSleepTime + next.wakeUpMinute - next.asleepMinute);
-
-
-        public int DaysAsleepAt(int guard, int minute)
-            => (
+        {
+            var sleepTimes = (
                 from day in Entries
                 where day.Guard == guard
-                where day.SleepTimes.Any(sleepTime => sleepTime.asleepMinute <= minute && sleepTime.wakeUpMinute > minute)
-                select day
-            ).Count();
+                select day.SleepTimes
+            ).SelectMany(x => x);
 
+            return sleepTimes.Aggregate(0, (totalSleepTime, next) => totalSleepTime + next.wakeUpMinute - next.asleepMinute);
+        }
 
-        public (int minute, int asleepCount)[] SleepTimePerMinute(int guard)
+        public int DaysAsleepAt(int guard, int minute)
+        {
+            var sleepingDays = from day in Entries
+                               where day.Guard == guard
+                               where day.SleepTimes.Any(sleepTime => sleepTime.asleepMinute <= minute && sleepTime.wakeUpMinute > minute)
+                               select day;
+
+            return sleepingDays.Count();
+        }
+
+        public (int minute, int asleepCount)[] DaysAsleepPerMinute(int guard)
         {
             var minutes = Enumerable.Range(0, 60);
 
-            return (
-                from minute in minutes
-                select (
-                    minute,
-                    asleepCount: DaysAsleepAt(guard, minute)
-                )
-            ).ToArray();
-        }
+            var sleepTimePerMinute = from minute in minutes
+                                     select (minute, asleepCount: DaysAsleepAt(guard, minute));
 
+            return sleepTimePerMinute.ToArray();
+        }
 
         internal static TimeSheet CalculateTimesheet(string observation)
         {
@@ -184,65 +176,5 @@ namespace AdventOfCode.Day1804
         public DateTime Date { get; }
         public int Guard { get; }
         public IEnumerable<(int asleepMinute, int wakeUpMinute)> SleepTimes { get; }
-    }
-
-    public class Day1804Test : TestBase<Day1804Solution, string, string>
-    {
-        public Day1804Test(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
-        }
-
-        public static object[][] ParserData =
-        {
-            new object[] {"[1518-11-01 00:00] Guard #10 begins shift", new DateTime(1518, 11, 1, 0, 0, 0), 10, null},
-            new object[] {"[1518-11-01 00:05] falls asleep", new DateTime(1518, 11, 1, 0, 5, 0), null, true},
-            new object[] {"[1518-11-01 00:25] wakes up", new DateTime(1518, 11, 1, 0, 25, 0), null, false},
-            new object[] {"[1518-11-05 00:03] Guard #99 begins shift", new DateTime(1518, 11, 5, 0, 3, 0), 99, null},
-        };
-
-        [Theory, MemberData(nameof(ParserData))]
-        public void TestParser(string input, DateTime timestamp, int? guardId, bool? asleep)
-        {
-            var parsed = TimeSheet.ParseObservations(input).Single();
-
-            Assert.Equal(timestamp, parsed.timestamp);
-            Assert.Equal(guardId, parsed.guardId);
-            Assert.Equal(asleep, parsed.asleep);
-        }
-
-    }
-
-    public class Day1804_TimesheetTests
-    {
-        public Day1804_TimesheetTests()
-        {
-            var observations = new Day1804Solution().GetPart1SampleInputs().First();
-            TimeSheet = TimeSheet.CalculateTimesheet(observations);
-        }
-
-        internal TimeSheet TimeSheet { get; }
-
-        [Theory]
-        [InlineData(10, 50)]
-        [InlineData(99, 30)]
-        public void TotalSleepTime(int guard, int totalSleepMinutes)
-        {
-            var calculated = TimeSheet.GuardTotalSleepMinutes(guard);
-            Assert.Equal(totalSleepMinutes, calculated);
-        }
-
-        [Fact]
-        public void Guard10_SleepTime()
-        {
-            var sleepMinutes = TimeSheet.SleepTimePerMinute(10);
-
-            Assert.Equal(2, sleepMinutes.Where(x => x.minute == 24)
-                                        .Select(x => x.asleepCount)
-                                        .Single());
-
-            Assert.All(sleepMinutes.Where(x => x.minute != 24)
-                                   .Select(x => x.asleepCount),
-                       i => Assert.InRange(i, 0, 1));
-        }
     }
 }
