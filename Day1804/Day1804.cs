@@ -34,9 +34,9 @@ namespace AdventOfCode.Day1804
                                                                           )
                                                                       };
 
-        public override IEnumerable<string> GetPart1SampleOutputs() => new []{"240"};
-        public override IEnumerable<string> GetPart2SampleOutputs() => new []{"4455"};
-        
+        public override IEnumerable<string> GetPart1SampleOutputs() => new[] {"240"};
+        public override IEnumerable<string> GetPart2SampleOutputs() => new[] {"4455"};
+
         public override string GetPart1Input() => ReadInput();
 
 
@@ -63,13 +63,9 @@ namespace AdventOfCode.Day1804
         {
             var timeSheet = TimeSheet.CalculateTimesheet(input);
 
-            var sleepTimesPerGuardMinute = (
-
-                from guard in timeSheet.AllGuardIds()
-                select (from st in timeSheet.DaysAsleepPerMinute(guard)
-                        select (guard, st.minute, st.asleepCount))
-
-            ).SelectMany(x => x);
+            var sleepTimesPerGuardMinute = from guard in timeSheet.AllGuardIds()
+                                           from st in timeSheet.DaysAsleepPerMinute(guard)
+                                           select (guard, st.minute, st.asleepCount);
 
             var sleepiestMinute = sleepTimesPerGuardMinute.OrderByDescending(x => x.asleepCount)
                                                           .First();
@@ -91,11 +87,10 @@ namespace AdventOfCode.Day1804
 
         public int GuardTotalSleepMinutes(int guard)
         {
-            var sleepTimes = (
-                from day in Entries
-                where day.Guard == guard
-                select day.SleepTimes
-            ).SelectMany(x => x);
+            var sleepTimes = from day in Entries
+                             where day.Guard == guard
+                             from sleepTime in day.SleepTimes
+                             select sleepTime;
 
             return sleepTimes.Aggregate(0, (totalSleepTime, next) => totalSleepTime + next.wakeUpMinute - next.asleepMinute);
         }
@@ -110,39 +105,39 @@ namespace AdventOfCode.Day1804
             return sleepingDays.Count();
         }
 
-        public (int minute, int asleepCount)[] DaysAsleepPerMinute(int guard)
+        public IEnumerable<(int minute, int asleepCount)> DaysAsleepPerMinute(int guard)
         {
             var minutes = Enumerable.Range(0, 60);
 
-            var sleepTimePerMinute = from minute in minutes
-                                     select (minute, asleepCount: DaysAsleepAt(guard, minute));
-
-            return sleepTimePerMinute.ToArray();
+            return from minute in minutes
+                   select (minute, asleepCount: DaysAsleepAt(guard, minute));
         }
 
         internal static TimeSheet CalculateTimesheet(string observation)
         {
-            var orderedObservations = ParseObservations(observation).OrderBy(x => x.timestamp);
+            var observations = ParseObservations(observation);
 
-            var shifts = from ob in orderedObservations
+            var shifts = from ob in observations
+                         orderby ob.timestamp
                          group ob by ob.timestamp.Hour != 0
                              ? ob.timestamp.AddDays(1).Date
                              : ob.timestamp.Date;
 
             var entries = from shift in shifts
                           select new TimeSheetEntry(
+
                               date: shift.Key,
-                              guard: shift.First(x => x.guardId.HasValue).guardId.Value,
-                              sleepTimes: (
-                                  (from s in shift where s.asleep == true select s)
-                                  .Zip(
-                                      from s in shift where s.asleep == false select s,
-                                      (x, y) => (
-                                          asleepMinute: x.timestamp.Minute,
-                                          wakeUpMinute: y.timestamp.Minute
-                                      )
-                                  )
-                              )
+
+                              guard: (
+                                  from s in shift
+                                  where s.guardId != null
+                                  select s.guardId.Value
+                              ).First(),
+
+                              sleepTimes: Enumerable.Zip(
+                                  from s in shift where s.asleep == true select s.timestamp.Minute,
+                                  from s in shift where s.asleep == false select s.timestamp.Minute,
+                                  (x, y) => (asleepMinute: x, wakeUpMinute: y))
                           );
 
             return new TimeSheet(entries);
@@ -155,8 +150,7 @@ namespace AdventOfCode.Day1804
                                         RegexOptions.ExplicitCapture);
 
             return from m in matches
-                   select
-                   (
+                   select (
                        DateTime.Parse(m.Groups["ts"].Value),
                        m.Groups["guardId"].Success ? int.Parse(m.Groups["guardId"].Value) : (int?) null,
                        m.Groups["asleep"].Success ? true : m.Groups["wake"].Success ? false : (bool?) null
