@@ -15,45 +15,39 @@ namespace AdventOfCode.Day1805
         public override string GetPart1Input() => ReadInput();
 
         private static bool DoReact(char a, char b)
-            => char.ToLowerInvariant(a) == char.ToLowerInvariant(b) &&
-               (char.IsUpper(a) && char.IsLower(b) || char.IsLower(a) && char.IsUpper(b));
+        {
+            var sameCharacter = char.ToLowerInvariant(a) == char.ToLowerInvariant(b);
+            var differentPolarity = char.IsUpper(a) && char.IsLower(b) || char.IsLower(a) && char.IsUpper(b);
+            return sameCharacter && differentPolarity;
+        }
 
         private static List<char> DoReactions(IEnumerable<char> input)
         {
-            return input.Aggregate(new List<char>(),
-                                   (list, next) =>
-                                   {
-                                       var previous = list.LastOrDefault();
-                                       if (previous != default && DoReact(previous, next))
-                                       {
-                                           list.RemoveAt(list.Count - 1);
-                                       }
-                                       else
-                                       {
-                                           list.Add(next);
-                                       }
+            var list = new List<char>();
 
-                                       return list;
-                                   });
+            foreach (var next in input)
+            {
+                var previous = list.LastOrDefault();
+                if (previous != default && DoReact(previous, next))
+                {
+                    list.RemoveAt(list.Count - 1);
+                }
+                else
+                {
+                    list.Add(next);
+                }
+            }
+
+            return list;
         }
 
         private static List<char> DoAllReactions(List<char> reduced)
         {
-            while (true)
-            {
-                var newReduced = DoReactions(reduced);
-                if (newReduced.Count == reduced.Count) break;
-                reduced = newReduced;
-            }
-
+            while (reduced.Count != (reduced = DoReactions(reduced)).Count){}
             return reduced;
         }
 
-        public override object SolvePart1(string input)
-        {
-            var reduced = DoAllReactions(input.ToList());
-            return reduced.Count;
-        }
+        public override object SolvePart1(string input) => DoAllReactions(input.ToList()).Count;
 
         public override object SolvePart2(string input)
         {
@@ -72,7 +66,7 @@ namespace AdventOfCode.Day1805
         }
     }
 
-    public class Day1805Test:TestBase<Day1805Solution, string, string>
+    public class Day1805Test : TestBase<Day1805Solution, string, string>
     {
         public Day1805Test(ITestOutputHelper outputHelper) : base(outputHelper)
         {
