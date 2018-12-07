@@ -50,7 +50,7 @@ namespace AdventOfCode.Day1805
             var reduced = from i in inputsWithoutOneChar
                           select DoReactions(i.ToList()).Count;
 
-            return reduced.Min(x => x);
+            return reduced.Min();
         }
     }
 
