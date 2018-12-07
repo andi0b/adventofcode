@@ -41,13 +41,12 @@ namespace AdventOfCode.Day1807
 
         public override object SolvePart2((int workerCount, int additionalWorkTime, string steps) input)
         {
-            int StepDuration(char step) => input.additionalWorkTime + step - 'A' + 1;
-
             var stepper = new Stepper(input.steps);
-            var timeOffset = 0;
             var workers = Enumerable.Repeat(true, input.workerCount)
                                     .Select(x => new Worker())
                                     .ToArray();
+
+            var timeOffset = 0;
 
             while (true)
             {
@@ -66,6 +65,7 @@ namespace AdventOfCode.Day1807
                 timeOffset = NextFinishTime();
             }
 
+
             void CollectFinishedWork()
             {
                 foreach (var finishedWorker in FinishedWorkers())
@@ -80,35 +80,34 @@ namespace AdventOfCode.Day1807
                 var nextWorker = IdleWorkers().FirstOrDefault();
                 if (nextWorker == null) return false;
 
-                var workDuration = StepDuration(step);
                 nextWorker.WorkinOnStep = step;
-                nextWorker.BusyUntil = timeOffset + workDuration;
+                nextWorker.BusyUntil = timeOffset + StepDuration(step);
                 return true;
             }
 
-            int NextFinishTime() =>
-            (
-                from worker in WorkingWorkers()
-                orderby worker.BusyUntil
-                select worker.BusyUntil
-            ).First();
+            int NextFinishTime() => WorkingWorkers().Min(x => x.BusyUntil);
 
-            IEnumerable<Worker> IdleWorkers() => from worker in workers
-                                                 where worker.BusyUntil == 0
-                                                 select worker;
+            int StepDuration(char step) => input.additionalWorkTime + step - 'A' + 1;
 
-            IEnumerable<Worker> WorkingWorkers() => from worker in workers
-                                                    where worker.BusyUntil > 0
-                                                    select worker;
+            IEnumerable<Worker> IdleWorkers()
+                => from worker in workers
+                   where worker.BusyUntil == 0
+                   select worker;
 
-            IEnumerable<Worker> FinishedWorkers() => from worker in workers
-                                                     where worker.BusyUntil > 0
-                                                     where worker.BusyUntil <= timeOffset
-                                                     select worker;
+            IEnumerable<Worker> WorkingWorkers()
+                => from worker in workers
+                   where worker.BusyUntil > 0
+                   select worker;
 
-            IEnumerable<char> StepsInProcessing()=> from worker in WorkingWorkers()
-                                                  select worker.WorkinOnStep;
+            IEnumerable<Worker> FinishedWorkers()
+                => from worker in workers
+                   where worker.BusyUntil > 0
+                   where worker.BusyUntil <= timeOffset
+                   select worker;
 
+            IEnumerable<char> StepsInProcessing()
+                => from worker in WorkingWorkers()
+                   select worker.WorkinOnStep;
         }
 
         class Worker

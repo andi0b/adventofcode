@@ -78,6 +78,7 @@ namespace AdventOfCode.Day1802
             string RemoveDiffChars(string a, string b) => string.Concat(
                 a.Zip(b, ValueTuple.Create)
                  .Where(x => x.Item1 == x.Item2)
+                 .Select(x=>x.Item1)
             );
                     
             foreach (var item in input)
