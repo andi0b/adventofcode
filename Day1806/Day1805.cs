@@ -37,21 +37,24 @@ namespace AdventOfCode.Day1806
             var map = new Map(input);
             var infiniteIds = map.InfiniteIds();
 
-            var grouped = from value in map.Values
-                          group value by value.Value
-                          into g
-                          where !infiniteIds.Contains(g.Key)
-                          select (g.Key, count: g.Count());
+            var areaSizes = from value in map.Values
+                            group value by value.nearestCoordinateId
+                            into g
+                            where !infiniteIds.Contains(g.Key)
+                            select g.Count();
 
-            return grouped.Max(x => x.count);
+            return areaSizes.Max();
         }
 
         public override object SolvePart2((int times, string[] coordinates) input)
         {
             var map = new Map(input.coordinates);
-            var b = map.b();
-            var c = b.Where(x => x.Value < input.times);
-            return c.Count();
+
+            return (
+                from v in map.Values
+                where v.totalDistance < input.times
+                select true
+            ).Count();
         }
     }
 
@@ -59,69 +62,51 @@ namespace AdventOfCode.Day1806
     {
         internal int ManhattanDistance((int x, int y) a, (int x, int y) b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
 
-        public Map(string[] input)
-        {
-            var coordinates = from i in input
-                              let split = i.Split(',')
-                              let x = int.Parse(split[0])
-                              let y = int.Parse(split[1])
-                              select (x, y);
-
-            Coordinates = coordinates.Select((point, i) => new Coordinate(point, i))
-                                     .ToList();
-
-            CountX = Coordinates.Max(i => i.Point.x) + 1;
-            CountY = Coordinates.Max(i => i.Point.y) + 1;
-
-            Values = NewMethod();
-        }
-
-        public Dictionary<(int x, int y), int> Values { get; set; }
-
-        public Dictionary<(int x, int y), int> NewMethod()
-        {
-            return (
-                from x in Enumerable.Range(0, CountX)
-                from y in Enumerable.Range(0, CountY)
-                let point = (x, y)
-                select (point, value: MapValueForPoint(point))
-            ).ToDictionary(x => x.point, x => x.value);
-
-
-            int MapValueForPoint((int x, int y) point)
-            {
-                var distances = from c in Coordinates
-                                select new {c.Id, Distance = ManhattanDistance(point, c.Point)};
-
-                var minDistance = distances.Min(x => x.Distance);
-
-                try
-                {
-                    return distances.Single(x => x.Distance == minDistance).Id;
-                }
-                catch
-                {
-                    return -1;
-                }
-            }
-        }
-
-        public Dictionary<(int x, int y), int> b()
-        {
-            return (
-                from x in Enumerable.Range(0, CountX)
-                from y in Enumerable.Range(0, CountY)
-                let point = (x, y)
-                let totalDistance = (from coordinate in Coordinates
-                                     select ManhattanDistance(point, coordinate.Point)).Sum()
-                select (point, totalDistance)
-            ).ToDictionary(x => x.point, x => x.totalDistance);
-        }
-
+        public List<((int x, int y) point, int nearestCoordinateId, int totalDistance)> Values { get; set; }
         public int CountX { get; set; }
         public int CountY { get; set; }        
-        public List<Coordinate> Coordinates { get; }
 
+
+        public Map(string[] input)
+        {
+            var coordinates = (
+                    from i in input
+                    let split = i.Split(',')
+                    let x = int.Parse(split[0])
+                    let y = int.Parse(split[1])
+                    select (x, y)
+                ).Select((point, id) => (id, point))
+                 .ToList();
+                                              
+            CountX = coordinates.Max(i => i.point.x) + 1;
+            CountY = coordinates.Max(i => i.point.y) + 1;
+
+            Values = (
+                from x in Enumerable.Range(0, CountX)
+                from y in Enumerable.Range(0, CountY)
+                let point = (x, y)
+                let totalDistance = TotalDistance(point)
+                let nearestCoordinateId = NearestCoordinateId(point)
+                select (point, nearestCoordinateId, totalDistance)
+            ).ToList();
+
+            int NearestCoordinateId((int x, int y) point)
+                => (
+                        from c in coordinates
+                        select (c.id, distance: ManhattanDistance(point, c.point))
+                    ).Aggregate((distance: int.MaxValue, id: -1),
+                                (prev, next)
+                                    => prev.distance == next.distance
+                                        ? (prev.distance, -1)
+                                        : next.distance < prev.distance
+                                            ? (next.distance, next.id)
+                                            : prev)
+                     .id;
+
+            int TotalDistance((int x, int y) point)
+                => (from coordinate in coordinates
+                    select ManhattanDistance(point, coordinate.point)).Sum();
+        }
 
         internal IEnumerable<int> InfiniteIds()
         {
@@ -131,22 +116,12 @@ namespace AdventOfCode.Day1806
             var rigRow = from y in Enumerable.Range(0, CountY) select (CountX - 1, y);
             var outerPoints = topRow.Concat(botRow).Concat(lefRow).Concat(rigRow);
 
+            var dict = Values.ToDictionary(x => x.point, x => x.nearestCoordinateId);
+
             return (
                 from point in outerPoints
-                select Values[point]
+                select dict[point]
             ).Distinct();
-        }
-    }
-
-    public class Coordinate
-    {
-        public int Id { get; }
-        public (int x, int y) Point { get; }
-
-        public Coordinate((int x, int y) point, int id)
-        {
-            Point = point;
-            Id = id;
         }
     }
 
