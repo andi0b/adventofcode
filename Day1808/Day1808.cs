@@ -10,7 +10,7 @@ namespace AdventOfCode.Day1808
     {
         public override IEnumerable<int[]> GetPart1SampleInputs() => new[] {new[] {2, 3, 0, 3, 10, 11, 12, 1, 1, 0, 1, 99, 2, 1, 1, 2}};
         public override IEnumerable<string> GetPart1SampleOutputs() => new[] {"138"};
-        public override IEnumerable<string> GetPart2SampleOutputs() => new[] { "66" };
+        public override IEnumerable<string> GetPart2SampleOutputs() => new[] {"66"};
 
 
         public override int[] GetPart1Input() => ReadInput().Split(' ')
@@ -20,66 +20,47 @@ namespace AdventOfCode.Day1808
         public override object SolvePart1(int[] input) => GetRootNode(input).MetadataSum;
         public override object SolvePart2(int[] input) => GetRootNode(input).Value;
 
-        TreeItem GetRootNode(IEnumerable<int> input) => ParseTreeItem(input.GetEnumerator());
+        private TreeItem GetRootNode(int[] input) => ParseTreeItem(input, out var _);
 
-        TreeItem ParseTreeItem(IEnumerator<int> enumerator)
+        private TreeItem ParseTreeItem(ArraySegment<int> data, out ArraySegment<int> remainingData)
         {
-            var childNodeCount = enumerator.TakeNext();
-            var metadataLength = enumerator.TakeNext();
+            var childNodeCount = data[0];
+            var metadataLength = data[1];
+
+            data = data.Slice(2);
 
             var childNodes = (
                 from id in Enumerable.Range(0, childNodeCount)
-                select ParseTreeItem(enumerator)
+                select ParseTreeItem(data, out data)
             ).ToArray();
 
-            var metadata = enumerator.Take(metadataLength)
-                                     .ToArray();
+            var metadata = data.Slice(0, metadataLength);
 
-            return new TreeItem(childNodes, metadata);
+            remainingData = data.Slice(metadataLength);
+
+            return new TreeItem {Children = childNodes, Metadata = metadata};
         }
     }
 
     class TreeItem
     {
-        private readonly TreeItem[] _children;
-        private readonly int[] _metadata;
-
-        public TreeItem(TreeItem[] children, int[] metadata)
-        {
-            _children = children;
-            _metadata = metadata;
-        }
+        public TreeItem[] Children { get; set; }
+        public ArraySegment<int> Metadata { get; set; }
 
         public int MetadataSum
-            => _metadata.Sum() + (
-                   from child in _children
+            => Metadata.Sum() + (
+                   from child in Children
                    select child.MetadataSum
                ).Sum();
 
         public int Value
-            => _children.Any()
-                ? (from id in _metadata
-                   let child = _children.ElementAtOrDefault(id - 1)
+            => Children.Any()
+                ? (from id in Metadata
+                   let child = Children.ElementAtOrDefault(id - 1)
                    where child != null
                    select child.Value).Sum()
-                : _metadata.Sum();
+                : Metadata.Sum();
     }
-
-    static class EnumeratorExtensions
-    {
-        public static IEnumerable<T> Take<T>(this IEnumerator<T> enumerator, int count)
-        {
-            for (int i = 0; i < count && enumerator.MoveNext(); i++)
-                yield return enumerator.Current;
-        }
-
-        public static T TakeNext<T>(this IEnumerator<T> enumerator)
-        {
-            if (!enumerator.MoveNext()) throw new Exception("No next value!");
-            return enumerator.Current;
-        }
-    }
-
 
     public class Day1808Test : TestBase<Day1808Solution, int[], int[]>
     {
