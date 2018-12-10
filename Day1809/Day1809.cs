@@ -36,15 +36,15 @@ namespace AdventOfCode.Day1809
 
                 if (marble % 23 == 0)
                 {
-                    ring.ChangeCurrentMarble(-7);
+                    ring.ChangeCurrent(-7);
                     var removedMarble = ring.TakeCurrent();
                     scores[currentPlayer] = scores[currentPlayer] + marble + removedMarble;
                 }
                 else
                 {
-                    ring.ChangeCurrentMarble(1);
+                    ring.ChangeCurrent(1);
                     ring.AddAfterCurrent(marble);
-                    ring.ChangeCurrentMarble(1);
+                    ring.ChangeCurrent(1);
                 }
             }
 
@@ -65,7 +65,7 @@ namespace AdventOfCode.Day1809
             _currentNode = _data.First;
         }
 
-        public void ChangeCurrentMarble(int index)
+        public void ChangeCurrent(int index)
         {
             if (index>0)
                 for (var i = 0; i < index; i++)
@@ -82,11 +82,10 @@ namespace AdventOfCode.Day1809
 
         public int TakeCurrent()
         {
-            var newCurrent = _currentNode.Next ?? _data.First;
-            var value = _currentNode.Value;
-            _data.Remove(_currentNode);
-            _currentNode = newCurrent;
-            return value;
+            var node = _currentNode;
+            ChangeCurrent(1);
+            _data.Remove(node);
+            return node.Value;
         }
     }
 
