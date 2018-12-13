@@ -35,9 +35,9 @@ namespace AdventOfCode
         public virtual object SolvePart1(TPart1 input) => null;
         public virtual object SolvePart2(TPart2 input) => null;
 
-        protected string ReadInput() => File.ReadAllText(InputFileName);
-        protected string[] ReadInputLines() => File.ReadAllLines(InputFileName);
-        public string InputFileName => "InputFiles\\" + GetType().Name.Replace("Solution", "") + ".txt";
+        protected string ReadInput(string postfix = ".txt") => File.ReadAllText(InputFileName(postfix));
+        protected string[] ReadInputLines(string postfix = ".txt") => File.ReadAllLines(InputFileName(postfix));
+        public string InputFileName(string postfix) => "InputFiles\\" + GetType().Name.Replace("Solution", "") + postfix;
     }
 
     public abstract class TestBase<TSolution, TPart1, TPart2> where TSolution : SolutionBase<TPart1, TPart2>, new()
