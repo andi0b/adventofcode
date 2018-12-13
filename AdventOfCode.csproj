@@ -37,6 +37,8 @@
     <None Remove="InputFiles\Day1810.txt" />
     <None Remove="InputFiles\Day1812.txt" />
     <None Remove="InputFiles\Day1812_Example.txt" />
+    <None Remove="InputFiles\Day1813 - Copy.txt" />
+    <None Remove="InputFiles\Day1813.txt" />
   </ItemGroup>
 
   <ItemGroup>
