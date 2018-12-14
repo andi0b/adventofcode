@@ -18,6 +18,7 @@ namespace AdventOfCode.Day1814
         public override int GetPart1Input() => 920831;
         public override string GetPart2Input() => GetPart1Input().ToString();
 
+
         public override object SolvePart1(int input)
         {
             var recipeBoard = new RecipeBoard();
@@ -25,7 +26,7 @@ namespace AdventOfCode.Day1814
             for (var i = 0; i<input+10; i++)
                 recipeBoard.Step();
 
-            return recipeBoard.GetScores(input, 10);
+            return recipeBoard.GetScores(input, 10).ToString("D10");
         }
 
         public override object SolvePart2(string input)
@@ -33,109 +34,75 @@ namespace AdventOfCode.Day1814
             var recipeBoard = new RecipeBoard();
 
             var length = input.Length;
+            var inputNumber = int.Parse(input);
             while (true)
             {
                 recipeBoard.Step();
 
-                //if (recipeBoard.GetScores(recipeBoard.Count - length, length) == input)
-                //    return recipeBoard.Count - length;
-                //if (recipeBoard.GetScores(recipeBoard.Count - length - 1, length) == input)
-                //    return recipeBoard.Count - length - 1;
+                if (recipeBoard.Count - 1 < length)
+                    continue;
 
-                if (recipeBoard.ScoreEnd(0,length) == input)
+                if (recipeBoard.GetScores(recipeBoard.Count - length, length) == inputNumber)
                     return recipeBoard.Count - length;
-                if (recipeBoard.GetScores(1,length) == input)
+                if (recipeBoard.GetScores(recipeBoard.Count - length - 1, length) == inputNumber)
                     return recipeBoard.Count - length - 1;
             }
         }
     }
 
+
     internal class RecipeBoard
     {
-        private readonly LinkedList<int> _recipies;
-        private readonly List<Elf> _elves;
-
+        private readonly List<int> _recipies = new List<int> {3, 7};
+        private readonly int[] _elfPositions = {0, 1};
+        
         public int Count => _recipies.Count;
 
-        public RecipeBoard()
+        private void AddNewReceipts()
         {
-            _recipies = new LinkedList<int>(new[] {3, 7});
-            _elves = _recipies.Nodes().Select(x => new Elf(x)).ToList();
+            var oldRecepiesSum = _recipies[_elfPositions[0]] + _recipies[_elfPositions[1]];
+
+            if (oldRecepiesSum >= 10)
+            {
+                _recipies.Add(oldRecepiesSum / 10);
+                _recipies.Add(oldRecepiesSum % 10);
+            }
+            else
+                _recipies.Add(oldRecepiesSum);
         }
 
         public void Step()
         {
-            foreach (var newRecepie in CalculateNewRecepies())
-            {
-                _recipies.AddLast(newRecepie);
-            }
-
+            AddNewReceipts();
             MoveElves();
-        }
-
-        private IEnumerable<int> CalculateNewRecepies()
-        {
-            var oldRecepiesSum = _elves.Sum(x => x.Value);
-            return oldRecepiesSum.ToString().Select(x => x - '0').ToArray();
         }
 
         private void MoveElves()
         {
-            foreach (var elf in _elves)
-                elf.Move();
-        }
-
-        public string GetScores(int offset, int scoresCount)
-        {
-            var slice = _recipies.Skip(offset).Take(scoresCount);
-            return string.Join(string.Empty, slice);
-        }
-
-        public string ScoreEnd(int offset, int scoresCount)
-        {
-            var node = _recipies.Last;
-            for (var i = 0; i < offset; i++)
-                node = node.Previous ?? node.List.Last;
-
-            var scores = new int[scoresCount];
-            for (var i = 0; i < scoresCount; i++)
+            for (var i = 0; i < _elfPositions.Length; i++)
             {
-                scores[scoresCount - i - 1] = node.Value;
-                node = node.Previous ?? node.List.Last;
+                var curPos = _elfPositions[i];
+                var increment = _recipies[curPos] + 1;
+                _elfPositions[i] = (curPos + increment) % _recipies.Count;
+            }
+        }
+
+        public long GetScores(int offset, int scoresCount)
+        {
+            var num = 0L;
+            for (int i = 0; i < scoresCount; i++)
+            {
+                var idx = scoresCount - 1 - i;
+
+                var mul = 1L;
+                for (var j = 0; j < i; j++)
+                    mul *= 10;
+
+                num += _recipies[idx + offset] * mul;
+
             }
 
-            return string.Join(string.Empty, scores);
-        }
-    }
-
-    internal class Elf
-    {
-        public Elf(LinkedListNode<int> currentRecipe)
-        {
-            CurrentRecipe = currentRecipe;
-        }
-
-        public LinkedListNode<int> CurrentRecipe { get; set; }
-
-        public int Value => CurrentRecipe.Value;
-
-        public void Move()
-        {
-            var moveCount = Value + 1;
-            for (var i = 0; i < moveCount; i++)
-                CurrentRecipe = CurrentRecipe.Next ?? CurrentRecipe.List.First;
-        }
-    }
-
-    internal static class LinkedListExtensions
-    {
-        public static IEnumerable<LinkedListNode<T>> Nodes<T>(this LinkedList<T> list)
-        {
-            var node = list.First;
-            do
-            {
-                yield return node;
-            } while ((node = node.Next) != null);
+            return num;
         }
     }
 
