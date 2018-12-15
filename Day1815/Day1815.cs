@@ -128,11 +128,11 @@ namespace AdventOfCode.Day1815
                 while (DoRound())
                 {
                     round++;
-                    if (elves.Any(x => x.Hitpoints <= 0))
+                    if (elves.Any(x => !x.IsAlive))
                         break;
                 }
 
-                var anyDeadElves = elves.Any(x => x.Hitpoints <= 0);
+                var anyDeadElves = elves.Any(x => !x.IsAlive);
                 if (!anyDeadElves)
                 {
                     var hitpoints = PlayingField.GetUnits().Sum(x => x.Hitpoints);
@@ -146,29 +146,29 @@ namespace AdventOfCode.Day1815
             var units = PlayingField.GetUnits()
                                      .ToArray();
 
-
             foreach (var currentUnit in units)
             {
-                if (currentUnit.Hitpoints<=0)
+                if (!currentUnit.IsAlive)
                     continue;
 
                 var possibleTargets = (
                     from unit in PlayingField.GetUnits()
                     where unit.Team != currentUnit.Team &&
-                          unit.Hitpoints > 0
+                          unit.IsAlive
                     select unit
                 ).ToArray();
 
                 if (!possibleTargets.Any())
                     return false;
 
-                StepUnit(currentUnit, possibleTargets);
+                Move(currentUnit, possibleTargets);
+                Attack(currentUnit);
             }
 
             return true;
         }
 
-        internal void StepUnit(Unit unit, Unit[] possibleTargets)
+        internal void Move(Unit unit, Unit[] possibleTargets)
         {
             var inRangeLocations = (
                 from target in possibleTargets
@@ -180,25 +180,14 @@ namespace AdventOfCode.Day1815
 
             if (!inRangeLocations.Contains(unit.Location))
             {
-                var grid = new Grid(PlayingField.SizeX, PlayingField.SizeY, 10f);
-
-                var unitAdjacentLocations = unit.AdjacentLocations;
-                for (var i = 0; i < 4; i++)
-                {
-                    var position = GetPosition(unitAdjacentLocations[i]);
-                    grid.SetCellCost(position, 1f + 1f * i);
-                }
-
-                foreach (var tile in PlayingField.GetTiles())
-                    grid.BlockCell(GetPosition(tile.Location));
-
+                var grid = CalculateAstarGrid(unit);
 
                 var paths = (
-                    from inRangeLocation in inRangeLocations
-                    let internalIndex = PlayingField.InternalIndex(inRangeLocation)
+                    from inRangeLocation in inRangeLocations.AsParallel()
+                    let readingDirectionIndex = PlayingField.ReadingDirectionIndex(inRangeLocation)
                     let shortestPath = grid.GetPath(GetPosition(unit.Location), GetPosition(inRangeLocation), MovementPatterns.LateralOnly)
-                    orderby shortestPath.Length, internalIndex
-                    select new {inRangeLocation, shortestPath, internalIndex}
+                    orderby shortestPath.Length, readingDirectionIndex
+                    select new {inRangeLocation, shortestPath, readingDirectionIndex}
                 ).ToArray();
 
                 var chosenPath = paths.FirstOrDefault(path => path.shortestPath.Length > 0);
@@ -206,11 +195,31 @@ namespace AdventOfCode.Day1815
                 if (chosenPath != null)
                     PlayingField.MoveUnit(unit, GetLocation(chosenPath.shortestPath[1]));
             }
+        }
 
+        private Grid CalculateAstarGrid(Unit unit)
+        {
+            var grid = new Grid(PlayingField.SizeX, PlayingField.SizeY, 10f);
 
+            var unitAdjacentLocations = unit.AdjacentLocations;
+            for (var i = 0; i < 4; i++)
+            {
+                var position = GetPosition(unitAdjacentLocations[i]);
+                grid.SetCellCost(position, 1f + 1f * i);
+            }
+
+            foreach (var tile in PlayingField.GetTiles())
+                grid.BlockCell(GetPosition(tile.Location));
+            
+            return grid;
+        }
+
+        internal void Attack(Unit unit)
+        {
             var adjacentTargets = from adjacentLocation in unit.AdjacentLocations
                                   let adjacentUnit = PlayingField[adjacentLocation] as Unit
-                                  where adjacentUnit != null && adjacentUnit.Team != unit.Team
+                                  where adjacentUnit != null &&
+                                        adjacentUnit.Team != unit.Team
                                   orderby adjacentUnit.Hitpoints
                                   select adjacentUnit;
 
@@ -219,7 +228,7 @@ namespace AdventOfCode.Day1815
             {
                 chosenTarget.Hitpoints -= unit.AttackPower;
 
-                if (chosenTarget.Hitpoints <= 0)
+                if (!chosenTarget.IsAlive)
                 {
                     PlayingField[chosenTarget.Location] = null;
                 }
@@ -240,11 +249,11 @@ namespace AdventOfCode.Day1815
 
         public Tile this[(int x, int y) location]
         {
-            get => _tiles[InternalIndex(location)];
-            set => _tiles[InternalIndex(location)] = value;
+            get => _tiles[ReadingDirectionIndex(location)];
+            set => _tiles[ReadingDirectionIndex(location)] = value;
         }
 
-        public int InternalIndex((int x, int y) location) => SizeX * location.y + location.x;
+        public int ReadingDirectionIndex((int x, int y) location) => SizeX * location.y + location.x;
 
         public PlayingField(string[] lines)
         {
@@ -320,5 +329,6 @@ namespace AdventOfCode.Day1815
         public int Hitpoints { get; set; } = 200;
         public int AttackPower { get; set; } = 3;
         public char Team { get; }
+        public bool IsAlive => Hitpoints > 0;
     }
 }
