@@ -52,6 +52,49 @@ namespace AdventOfCode.Day1815
                    "Outcome: 46 * 859 = 39514"
                };
 
+        public override IEnumerable<string[]> GetPart2SampleInputs()
+            => new[]
+               {
+                   new[]
+                   {
+                       "#######",
+                       "#.G...#",
+                       "#...EG#",
+                       "#.#.#G#",
+                       "#..G#E#",
+                       "#.....#",
+                       "#######",
+                   },
+                   new[]
+                   {
+                       "#######",
+                       "#E..EG#",
+                       "#.#G.E#",
+                       "#E.##E#",
+                       "#G..#.#",
+                       "#..E#.#",
+                       "#######"
+                   },
+                   new[]
+                   {
+                       "#######",
+                       "#E.G#.#",
+                       "#.#G..#",
+                       "#G.#.G#",
+                       "#G..#.#",
+                       "#...E.#",
+                       "#######",
+                   }
+               };
+
+        public override IEnumerable<string> GetPart2SampleOutputs()
+            => new[]
+               {
+                   "Needed AttackPower: 15, Outcome: 29 * 172 = 4988",
+                   "Needed AttackPower: 4, Outcome: 33 * 948 = 31284",
+                   "Needed AttackPower: 15, Outcome: 37 * 94 = 3478"
+               };
+
         public override string[] GetPart1Input() => ReadInputLines();
 
 
@@ -70,6 +113,32 @@ namespace AdventOfCode.Day1815
             var hitpoints = PlayingField.GetUnits().Sum(x => x.Hitpoints);
 
             return $"Outcome: {round} * {hitpoints} = {round * hitpoints}";
+        }
+
+        public override object SolvePart2(string[] input)
+        {
+            for (var elfAttackPower = 4;; elfAttackPower++)
+            {
+                PlayingField = new PlayingField(input);
+                var elves = PlayingField.GetUnits('E').ToArray();
+                foreach (var elf in elves)
+                    elf.AttackPower = elfAttackPower;
+
+                var round = 0;
+                while (DoRound())
+                {
+                    round++;
+                    if (elves.Any(x => x.Hitpoints <= 0))
+                        break;
+                }
+
+                var anyDeadElves = elves.Any(x => x.Hitpoints <= 0);
+                if (!anyDeadElves)
+                {
+                    var hitpoints = PlayingField.GetUnits().Sum(x => x.Hitpoints);
+                    return $"Needed AttackPower: {elfAttackPower}, Outcome: {round} * {hitpoints} = {round * hitpoints}";
+                }
+            }
         }
 
         internal bool DoRound()
@@ -249,7 +318,7 @@ namespace AdventOfCode.Day1815
         }
 
         public int Hitpoints { get; set; } = 200;
-        public int AttackPower { get; } = 3;
+        public int AttackPower { get; set; } = 3;
         public char Team { get; }
     }
 }
