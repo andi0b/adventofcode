@@ -80,6 +80,9 @@ namespace AdventOfCode.Day1815
 
             foreach (var currentUnit in units)
             {
+                if (currentUnit.Hitpoints<=0)
+                    continue;
+
                 var possibleTargets = (
                     from unit in PlayingField.GetUnits()
                     where unit.Team != currentUnit.Team &&
@@ -166,21 +169,13 @@ namespace AdventOfCode.Day1815
         public int SizeY { get; }
         public int SizeX { get; }
 
-        public Tile this[int x, int y]
-        {
-            get => _tiles[InternalIndex(x, y)];
-            set => _tiles[InternalIndex(x, y)] = value;
-        }
-
         public Tile this[(int x, int y) location]
         {
             get => _tiles[InternalIndex(location)];
             set => _tiles[InternalIndex(location)] = value;
         }
 
-        public int InternalIndex(int x, int y) => SizeX * y + x;
         public int InternalIndex((int x, int y) location) => SizeX * location.y + location.x;
-
 
         public PlayingField(string[] lines)
         {
@@ -190,7 +185,7 @@ namespace AdventOfCode.Day1815
 
             for (var x = 0; x < SizeX; x++)
             for (var y = 0; y < SizeY; y++)
-                this[x, y] = Tile.Create(lines[y][x], (x, y));
+                this[(x, y)] = Tile.Create(lines[y][x], (x, y));
         }
 
         public IEnumerable<Unit> GetUnits(char? team = null)

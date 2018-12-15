@@ -101,7 +101,7 @@ namespace AdventOfCode.Day1815
 
             void AssertPosition(char expectedTeam, int x, int y)
             {
-                var actual = solution.PlayingField[x, y];
+                var actual = solution.PlayingField[(x, y)];
                 Assert.IsType<Unit>(actual);
                 Assert.Equal(expectedTeam, ((Unit) actual).Team);
             }
