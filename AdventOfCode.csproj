@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="4.7.0" />
+    <PackageReference Include="RoyT.AStar" Version="2.1.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.3.12" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
@@ -39,6 +40,7 @@
     <None Remove="InputFiles\Day1812_Example.txt" />
     <None Remove="InputFiles\Day1813 - Copy.txt" />
     <None Remove="InputFiles\Day1813.txt" />
+    <None Remove="InputFiles\Day1815.txt" />
   </ItemGroup>
 
   <ItemGroup>
