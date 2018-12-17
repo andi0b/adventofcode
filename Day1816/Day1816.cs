@@ -87,7 +87,7 @@ namespace AdventOfCode.Day1816
                     if (u.Contains(c))
                         u.Remove(c);
 
-            } while (instructionsByOpcodes.All(x => x.Count == 1));
+            } while (!instructionsByOpcodes.All(x => x.Count == 1));
 
 
             var cpu = new Cpu();
