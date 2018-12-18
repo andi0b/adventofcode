@@ -272,7 +272,7 @@ namespace AdventOfCode.Day1815
             return team == null ? allUnits : allUnits.Where(u => u.Team == team);
         }
 
-        public IEnumerable<Tile> GetTiles(char? team = null) => _tiles.Where(tile => tile != null);
+        public IEnumerable<Tile> GetTiles() => _tiles.Where(tile => tile != null);
 
         public void MoveUnit(Unit unit, (int x, int y) newLocation)
         {
